@@ -1,22 +1,21 @@
-import { BLOCKED_DOMAINS, SCHEDULE } from "./config.js";
+import { loadSettings, Settings } from "./config.js";
 
 const ALARM_NAME = "blocker-tick";
 const RULE_ID_BASE = 1000;
 
-function isBlockingTime(now: Date): boolean {
+function isBlockingTime(now: Date, settings: Settings): boolean {
   const day = now.getDay();
   const hour = now.getHours();
-  const days: readonly number[] = SCHEDULE.days;
   return (
-    days.includes(day) &&
-    hour >= SCHEDULE.startHour &&
-    hour < SCHEDULE.endHour
+    settings.schedule.days.includes(day) &&
+    hour >= settings.schedule.startHour &&
+    hour < settings.schedule.endHour
   );
 }
 
-function buildRules(): chrome.declarativeNetRequest.Rule[] {
+function buildRules(settings: Settings): chrome.declarativeNetRequest.Rule[] {
   const blockedUrl = chrome.runtime.getURL("blocked.html");
-  return BLOCKED_DOMAINS.map((domain, i) => ({
+  return settings.blockedDomains.map((domain, i) => ({
     id: RULE_ID_BASE + i,
     priority: 1,
     action: {
@@ -31,16 +30,30 @@ function buildRules(): chrome.declarativeNetRequest.Rule[] {
 }
 
 async function syncRules(): Promise<void> {
-  const shouldBlock = isBlockingTime(new Date());
+  const settings = await loadSettings();
+  const shouldBlock = isBlockingTime(new Date(), settings);
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
 
-  if (shouldBlock && existing.length === 0) {
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      addRules: buildRules(),
-    });
-  } else if (!shouldBlock && existing.length > 0) {
+  if (!shouldBlock) {
+    if (existing.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: existing.map((r) => r.id),
+      });
+    }
+    return;
+  }
+
+  const desired = buildRules(settings);
+  const needsUpdate =
+    existing.length !== desired.length ||
+    existing.some(
+      (r, i) => r.condition.urlFilter !== desired[i]?.condition.urlFilter
+    );
+
+  if (needsUpdate) {
     await chrome.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: existing.map((r) => r.id),
+      addRules: desired,
     });
   }
 }
@@ -55,3 +68,4 @@ chrome.runtime.onStartup.addListener(init);
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) void syncRules();
 });
+chrome.storage.onChanged.addListener(() => void syncRules());
