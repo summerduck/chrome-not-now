@@ -1,4 +1,4 @@
-# Not Now
+# Focus Blocker
 
 A minimal Chrome extension that blocks distracting sites during your focus hours. No accounts, no tracking, no nags — just "Not now."
 
@@ -7,7 +7,7 @@ A minimal Chrome extension that blocks distracting sites during your focus hours
 - Block any list of domains (subdomains included)
 - Schedule by days of the week and hours (e.g. Mon–Sat, 8:00–19:00)
 - Blocking via `declarativeNetRequest` — fast, private, no page content is read
-- Settings sync across your Chrome profiles via `chrome.storage.sync`
+- Settings sync across your devices via `chrome.storage.sync`
 
 ## Install
 

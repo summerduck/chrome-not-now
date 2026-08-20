@@ -1,6 +1,6 @@
 // Duplicates config.ts defaults: MV3 content scripts are not ES modules,
 // so this file cannot import from config.js.
-const DEFAULT_BLOCKED =["instagram.com", "facebook.com", "twitter.com", "x.com"];
+const DEFAULT_BLOCKED = ["instagram.com", "facebook.com", "twitter.com", "x.com"];
 const DEFAULT_SCHEDULE = { days: [1, 2, 3, 4, 5, 6], startHour: 8, endHour: 19 };
 
 chrome.storage.sync.get("settings", (stored) => {
